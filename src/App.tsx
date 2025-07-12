@@ -11,6 +11,9 @@ import Questions from "./pages/Questions";
 import QuestionDetail from "./pages/QuestionDetail";
 import AskQuestion from "./pages/AskQuestion";
 import UserProfile from "./pages/UserProfile";
+import Tags from "./pages/Tags";
+import AccountSettings from "./pages/AccountSettings";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +57,24 @@ const App = () => (
                 <>
                   <Navbar />
                   <UserProfile />
+                </>
+              } />
+              <Route path="/tags" element={
+                <>
+                  <Navbar />
+                  <Tags />
+                </>
+              } />
+              <Route path="/settings" element={
+                <>
+                  <Navbar />
+                  <AccountSettings />
+                </>
+              } />
+              <Route path="/admin" element={
+                <>
+                  <Navbar />
+                  <AdminPanel />
                 </>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

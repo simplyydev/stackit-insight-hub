@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -32,15 +32,18 @@ export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  const selectedTag = searchParams.get('tag');
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [selectedTag]);
 
   const fetchQuestions = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('questions')
         .select(`
           *,
@@ -52,8 +55,28 @@ export default function Questions() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setQuestions((data as any) || []);
+      // If filtering by tag, add the filter
+      if (selectedTag) {
+        const { data: taggedQuestions, error } = await supabase
+          .from('questions')
+          .select(`
+            *,
+            profiles:author_id (username, display_name),
+            question_tags!inner (
+              tags!inner (name)
+            ),
+            answers (id)
+          `)
+          .eq('question_tags.tags.name', selectedTag)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setQuestions((taggedQuestions as any) || []);
+      } else {
+        const { data, error } = await query;
+        if (error) throw error;
+        setQuestions((data as any) || []);
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
     } finally {
@@ -80,9 +103,14 @@ export default function Questions() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Questions</h1>
+          <h1 className="text-3xl font-bold">
+            {selectedTag ? `Questions tagged "${selectedTag}"` : 'Questions'}
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Find answers to your questions or help others by sharing your knowledge
+            {selectedTag 
+              ? `Browse all questions tagged with "${selectedTag}"`
+              : 'Find answers to your questions or help others by sharing your knowledge'
+            }
           </p>
         </div>
         
