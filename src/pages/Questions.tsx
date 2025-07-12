@@ -137,7 +137,7 @@ export default function Questions() {
                       {question.title}
                     </Link>
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <span>by {question.profiles?.display_name || question.profiles?.username}</span>
+                      <span>by <Link to={`/user/${question.profiles?.username}`} className="hover:text-primary">{question.profiles?.display_name || question.profiles?.username}</Link></span>
                       <span>{formatDistanceToNow(new Date(question.created_at))} ago</span>
                     </div>
                   </div>

@@ -10,6 +10,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { createMentionNotifications } from '@/lib/mentions';
 
 interface Tag {
   id: string;
@@ -114,6 +115,9 @@ export default function AskQuestion() {
         .insert(tagInserts);
 
       if (tagsError) throw tagsError;
+
+      // Create mention notifications
+      await createMentionNotifications(content, user.id, question.id, undefined, 'question');
 
       toast({
         title: "Question posted!",

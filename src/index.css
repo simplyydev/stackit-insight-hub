@@ -258,4 +258,20 @@ All colors MUST be HSL.
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
+
+  /* Rich Text Editor Styles */
+  .ProseMirror .mention {
+    background-color: hsl(var(--accent-light));
+    color: hsl(var(--accent-foreground));
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .mention-suggestions {
+    max-height: 200px;
+    overflow-y: auto;
+    min-width: 200px;
+  }
 }

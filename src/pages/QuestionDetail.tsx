@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { createMentionNotifications } from '@/lib/mentions';
 
 interface Question {
   id: string;
@@ -257,15 +258,20 @@ export default function QuestionDetail() {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
+      const { data: answer, error } = await supabase
         .from('answers')
         .insert({
           content: newAnswer.trim(),
           question_id: id!,
           author_id: user.id,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Create mention notifications
+      await createMentionNotifications(newAnswer, user.id, id!, answer.id, 'answer');
 
       toast({
         title: "Answer posted!",
@@ -354,7 +360,7 @@ export default function QuestionDetail() {
               </div>
               
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>asked by {question.profiles?.display_name || question.profiles?.username}</span>
+                <span>asked by <Link to={`/user/${question.profiles?.username}`} className="hover:text-primary">{question.profiles?.display_name || question.profiles?.username}</Link></span>
                 <span>{formatDistanceToNow(new Date(question.created_at))} ago</span>
                 <span>{question.view_count} views</span>
               </div>
@@ -428,7 +434,7 @@ export default function QuestionDetail() {
                            dangerouslySetInnerHTML={{ __html: answer.content }} />
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>answered by {answer.profiles?.display_name || answer.profiles?.username}</span>
+                        <span>answered by <Link to={`/user/${answer.profiles?.username}`} className="hover:text-primary">{answer.profiles?.display_name || answer.profiles?.username}</Link></span>
                         <span>{formatDistanceToNow(new Date(answer.created_at))} ago</span>
                         {answer.is_accepted && (
                           <Badge variant="default" className="bg-green-100 text-green-800">

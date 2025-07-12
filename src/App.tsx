@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Questions from "./pages/Questions";
 import QuestionDetail from "./pages/QuestionDetail";
 import AskQuestion from "./pages/AskQuestion";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +24,13 @@ const App = () => (
         <BrowserRouter>
           <div className="min-h-screen bg-background">
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={
+                <>
+                  <Navbar />
+                  <Questions />
+                </>
+              } />
+              <Route path="/landing" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/questions" element={
                 <>
@@ -43,8 +50,12 @@ const App = () => (
                   <AskQuestion />
                 </>
               } />
-              {/* Redirect /landing to / */}
-              <Route path="/landing" element={<Navigate to="/" replace />} />
+              <Route path="/user/:username" element={
+                <>
+                  <Navbar />
+                  <UserProfile />
+                </>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

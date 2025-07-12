@@ -3,6 +3,8 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import Mention from '@tiptap/extension-mention';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
   Bold, 
@@ -17,7 +19,7 @@ import {
   Image as ImageIcon,
   Smile
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface RichTextEditorProps {
   content?: string;
@@ -28,6 +30,23 @@ interface RichTextEditorProps {
 export function RichTextEditor({ content = '', onChange, placeholder }: RichTextEditorProps) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
+  const [users, setUsers] = useState<Array<{ id: string; username: string; display_name?: string }>>([]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, display_name')
+        .limit(100);
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -39,6 +58,84 @@ export function RichTextEditor({ content = '', onChange, placeholder }: RichText
         openOnClick: false,
       }),
       Image,
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention',
+        },
+        suggestion: {
+          items: ({ query }) => {
+            return users.filter(user => 
+              user.username.toLowerCase().includes(query.toLowerCase()) ||
+              user.display_name?.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 5);
+          },
+          render: () => {
+            let component: any;
+            let popup: any;
+
+            return {
+              onStart: (props: any) => {
+                component = document.createElement('div');
+                component.className = 'mention-suggestions bg-popover border rounded-lg shadow-lg p-2 z-50';
+                
+                popup = document.createElement('div');
+                popup.style.position = 'absolute';
+                popup.style.zIndex = '1000';
+                popup.appendChild(component);
+                document.body.appendChild(popup);
+              },
+
+              onUpdate: (props: any) => {
+                component.innerHTML = '';
+                
+                if (props.items.length === 0) {
+                  const noResults = document.createElement('div');
+                  noResults.className = 'px-3 py-2 text-sm text-muted-foreground';
+                  noResults.textContent = 'No users found';
+                  component.appendChild(noResults);
+                  return;
+                }
+
+                props.items.forEach((item: any, index: number) => {
+                  const button = document.createElement('button');
+                  button.className = `w-full text-left px-3 py-2 text-sm hover:bg-accent rounded ${index === props.selectedIndex ? 'bg-accent' : ''}`;
+                  button.textContent = `@${item.username}${item.display_name ? ` (${item.display_name})` : ''}`;
+                  
+                  button.addEventListener('click', () => {
+                    props.command({ id: item.id, label: item.username });
+                  });
+                  
+                  component.appendChild(button);
+                });
+
+                const { selection } = props.editor.state;
+                const { from } = selection;
+                const node = props.editor.view.nodeDOM(from);
+                
+                if (node) {
+                  const rect = node.getBoundingClientRect();
+                  popup.style.left = rect.left + 'px';
+                  popup.style.top = (rect.bottom + 8) + 'px';
+                }
+              },
+
+              onKeyDown: (props: any) => {
+                if (props.event.key === 'Escape') {
+                  popup.remove();
+                  return true;
+                }
+                return false;
+              },
+
+              onExit: () => {
+                if (popup) {
+                  popup.remove();
+                }
+              },
+            };
+          },
+        },
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
