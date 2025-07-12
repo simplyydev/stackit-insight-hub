@@ -8,6 +8,7 @@ import { Plus, Search, ChevronUp, ChevronDown, MessageSquare } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
+import { getUserRank, calculateUserScore } from '@/lib/ranking';
 
 interface Question {
   id: string;
@@ -19,6 +20,7 @@ interface Question {
   profiles: {
     username: string;
     display_name: string;
+    bio?: string;
   };
   question_tags: {
     tags: {
@@ -39,6 +41,18 @@ export default function Questions() {
 
   useEffect(() => {
     fetchQuestions();
+    
+    // Set up real-time subscription for new questions
+    const subscription = supabase
+      .channel('questions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'questions' }, () => {
+        fetchQuestions(); // Refresh when new questions are added
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [selectedTag]);
 
   const fetchQuestions = async () => {
@@ -47,7 +61,7 @@ export default function Questions() {
         .from('questions')
         .select(`
           *,
-          profiles:author_id (username, display_name),
+          profiles:author_id (username, display_name, bio),
           question_tags (
             tags (name)
           ),
@@ -61,7 +75,7 @@ export default function Questions() {
           .from('questions')
           .select(`
             *,
-            profiles:author_id (username, display_name),
+            profiles:author_id (username, display_name, bio),
             question_tags!inner (
               tags!inner (name)
             ),

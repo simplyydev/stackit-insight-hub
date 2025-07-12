@@ -162,13 +162,28 @@ export async function createSampleData() {
   try {
     console.log('Creating sample data...');
     
-    // Create sample users first
+    // Create 20 distinct sample users
     const sampleUsers = [
-      { email: 'alice@example.com', username: 'alice_dev', display_name: 'Alice Johnson' },
-      { email: 'bob@example.com', username: 'bob_codes', display_name: 'Bob Smith' },
-      { email: 'charlie@example.com', username: 'charlie_tech', display_name: 'Charlie Brown' },
-      { email: 'diana@example.com', username: 'diana_react', display_name: 'Diana Prince' },
-      { email: 'eve@example.com', username: 'eve_fullstack', display_name: 'Eve Adams' }
+      { email: 'alice@example.com', username: 'alice_dev', display_name: 'Alice Johnson', bio: 'Full-stack developer with 5+ years experience' },
+      { email: 'bob@example.com', username: 'bob_codes', display_name: 'Bob Smith', bio: 'Frontend specialist, React enthusiast' },
+      { email: 'charlie@example.com', username: 'charlie_tech', display_name: 'Charlie Brown', bio: 'Backend engineer, loves databases' },
+      { email: 'diana@example.com', username: 'diana_react', display_name: 'Diana Prince', bio: 'UI/UX designer and React developer' },
+      { email: 'eve@example.com', username: 'eve_fullstack', display_name: 'Eve Adams', bio: 'DevOps engineer and cloud architect' },
+      { email: 'frank@example.com', username: 'frank_mobile', display_name: 'Frank Wilson', bio: 'Mobile app developer, Flutter expert' },
+      { email: 'grace@example.com', username: 'grace_data', display_name: 'Grace Lee', bio: 'Data scientist and ML engineer' },
+      { email: 'henry@example.com', username: 'henry_security', display_name: 'Henry Davis', bio: 'Cybersecurity specialist' },
+      { email: 'iris@example.com', username: 'iris_frontend', display_name: 'Iris Chen', bio: 'Frontend developer, Vue.js advocate' },
+      { email: 'jack@example.com', username: 'jack_backend', display_name: 'Jack Miller', bio: 'Backend developer, microservices expert' },
+      { email: 'kate@example.com', username: 'kate_design', display_name: 'Kate Thompson', bio: 'Product designer with technical background' },
+      { email: 'liam@example.com', username: 'liam_ops', display_name: 'Liam Anderson', bio: 'Site reliability engineer' },
+      { email: 'maya@example.com', username: 'maya_qa', display_name: 'Maya Patel', bio: 'QA engineer and test automation specialist' },
+      { email: 'noah@example.com', username: 'noah_ai', display_name: 'Noah Rodriguez', bio: 'AI/ML researcher and developer' },
+      { email: 'olivia@example.com', username: 'olivia_product', display_name: 'Olivia White', bio: 'Product manager with engineering background' },
+      { email: 'peter@example.com', username: 'peter_startup', display_name: 'Peter Garcia', bio: 'Startup founder and tech entrepreneur' },
+      { email: 'quinn@example.com', username: 'quinn_blockchain', display_name: 'Quinn Martinez', bio: 'Blockchain developer and crypto enthusiast' },
+      { email: 'rachel@example.com', username: 'rachel_mentor', display_name: 'Rachel Johnson', bio: 'Senior developer and coding mentor' },
+      { email: 'sam@example.com', username: 'sam_freelance', display_name: 'Sam Taylor', bio: 'Freelance developer, multiple tech stacks' },
+      { email: 'tina@example.com', username: 'tina_student', display_name: 'Tina Brown', bio: 'Computer science student, eager to learn' }
     ];
 
     // Note: In a real app, you'd use Supabase Auth to create these users
@@ -180,7 +195,12 @@ export async function createSampleData() {
         user_id: `user_${index + 1}`,
         username: user.username,
         display_name: user.display_name,
-        role: 'user'
+        bio: user.bio,
+        role: 'user',
+        questions_asked: Math.floor(Math.random() * 10) + 1,
+        answers_given: Math.floor(Math.random() * 15) + 2,
+        total_votes: Math.floor(Math.random() * 100) + 10,
+        accepted_answers: Math.floor(Math.random() * 5)
       })))
       .select();
 
@@ -202,7 +222,7 @@ export async function createSampleData() {
     // Create questions
     for (let i = 0; i < sampleQuestions.length; i++) {
       const question = sampleQuestions[i];
-      const authorId = `user_${(i % 5) + 1}`; // Rotate through users
+      const authorId = `user_${(i % 20) + 1}`; // Rotate through all 20 users
       
       const { data: createdQuestion, error: questionError } = await supabase
         .from('questions')
@@ -238,11 +258,14 @@ export async function createSampleData() {
           .insert(questionTags);
       }
 
-      // Add answers for this question
+      // Add answers for this question (5-10 answers each)
+      const numAnswers = Math.floor(Math.random() * 6) + 5; // 5-10 answers
+      
       if (sampleAnswers[i]) {
-        for (let j = 0; j < sampleAnswers[i].length; j++) {
+        // Use existing sample answers first
+        for (let j = 0; j < Math.min(sampleAnswers[i].length, numAnswers); j++) {
           const answer = sampleAnswers[i][j];
-          const answerAuthorId = `user_${((i + j + 1) % 5) + 1}`; // Different author for each answer
+          const answerAuthorId = `user_${((i + j + 1) % 20) + 1}`; // Different author for each answer
           
           await supabase
             .from('answers')
@@ -250,8 +273,31 @@ export async function createSampleData() {
               content: answer.content,
               question_id: createdQuestion.id,
               author_id: answerAuthorId,
-              vote_count: answer.vote_count,
+              vote_count: Math.max(0, answer.vote_count), // Ensure minimum vote count is 0
               is_accepted: answer.is_accepted
+            });
+        }
+        
+        // Add additional generic answers if needed
+        const remainingAnswers = numAnswers - sampleAnswers[i].length;
+        for (let k = 0; k < remainingAnswers; k++) {
+          const genericAnswers = [
+            "<p>This is a great question! I've encountered similar challenges in my projects.</p><p>Here's what worked for me:</p><ul><li>Start with the documentation</li><li>Look for community examples</li><li>Test incrementally</li></ul>",
+            "<p>I agree with the previous answers, but would like to add:</p><p>Make sure to consider performance implications and best practices when implementing this solution.</p>",
+            "<p>Another approach you might consider is:</p><p>Breaking down the problem into smaller, manageable pieces. This often leads to cleaner, more maintainable code.</p>",
+            "<p>I've been working with this technology for a while now, and here are some additional tips:</p><ul><li>Always validate your inputs</li><li>Handle edge cases properly</li><li>Write tests early</li></ul>",
+            "<p>Great discussion! For anyone else reading this, here's a helpful resource I found recently that covers this topic in detail.</p>"
+          ];
+          
+          const answerAuthorId = `user_${((i + sampleAnswers[i].length + k + 1) % 20) + 1}`;
+          await supabase
+            .from('answers')
+            .insert({
+              content: genericAnswers[k % genericAnswers.length],
+              question_id: createdQuestion.id,
+              author_id: answerAuthorId,
+              vote_count: Math.max(0, Math.floor(Math.random() * 15)), // 0-14 votes
+              is_accepted: false
             });
         }
       }

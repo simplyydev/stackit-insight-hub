@@ -190,6 +190,18 @@ export default function AccountSettings() {
     try {
       setLoading(true);
 
+      // First check if bucket exists, create if not
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const avatarBucket = buckets?.find(b => b.name === 'avatars');
+      
+      if (!avatarBucket) {
+        await supabase.storage.createBucket('avatars', {
+          public: true,
+          allowedMimeTypes: ['image/*'],
+          fileSizeLimit: 5242880 // 5MB
+        });
+      }
+
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);

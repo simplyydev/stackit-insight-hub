@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ArrowLeft, MessageSquare, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { getUserRank, calculateUserScore, getNextRank } from '@/lib/ranking';
 
 interface Profile {
   id: string;
@@ -14,6 +15,7 @@ interface Profile {
   display_name?: string;
   bio?: string;
   role: string;
+  created_at: string;
 }
 
 interface UserQuestion {
@@ -148,6 +150,34 @@ export default function UserProfile() {
                 {profile.display_name || profile.username}
               </h1>
               <p className="text-muted-foreground mb-2">@{profile.username}</p>
+
+              {/* User Rank */}
+              <div className="mb-4">
+                {(() => {
+                  const userScore = calculateUserScore({
+                    questions_asked: questions.length,
+                    answers_given: answers.length,
+                    total_votes: totalVotes,
+                    accepted_answers: acceptedAnswers
+                  });
+                  const currentRank = getUserRank(userScore);
+                  const nextRank = getNextRank(userScore);
+                  
+                  return (
+                    <div>
+                      <Badge className={`${currentRank.color} bg-background border-current`}>
+                        {currentRank.title} ({userScore} points)
+                      </Badge>
+                      {nextRank && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {nextRank.pointsNeeded} more points to reach {nextRank.rank.title}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              
               {profile.bio && (
                 <p className="text-sm mb-4">{profile.bio}</p>
               )}
@@ -166,6 +196,10 @@ export default function UserProfile() {
                     {acceptedAnswers} accepted answer{acceptedAnswers !== 1 ? 's' : ''}
                   </Badge>
                 )}
+              </div>
+              
+              <div className="text-sm text-muted-foreground mt-2">
+                Joined {formatDistanceToNow(new Date(profile.created_at))} ago
               </div>
             </div>
           </div>

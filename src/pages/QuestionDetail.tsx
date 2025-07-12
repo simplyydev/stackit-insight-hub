@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { createMentionNotifications } from '@/lib/mentions';
+import { getUserRank, calculateUserScore } from '@/lib/ranking';
 
 interface Question {
   id: string;
@@ -23,6 +24,7 @@ interface Question {
   profiles: {
     username: string;
     display_name: string;
+    bio?: string;
   };
   question_tags: {
     tags: {
@@ -40,6 +42,7 @@ interface Answer {
   profiles: {
     username: string;
     display_name: string;
+    bio?: string;
   };
 }
 
@@ -71,7 +74,7 @@ export default function QuestionDetail() {
         .from('questions')
         .select(`
           *,
-          profiles:author_id (username, display_name),
+          profiles:author_id (username, display_name, bio),
           question_tags (
             tags (name)
           )
@@ -98,7 +101,7 @@ export default function QuestionDetail() {
         .from('answers')
         .select(`
           *,
-          profiles:author_id (username, display_name)
+          profiles:author_id (username, display_name, bio)
         `)
         .eq('question_id', id)
         .order('is_accepted', { ascending: false })
@@ -171,6 +174,19 @@ export default function QuestionDetail() {
           });
         
         setUserVotes(prev => ({ ...prev, [targetId]: voteType }));
+      }
+
+      // For questions, if upvoted, also increment view count
+      if (isQuestion && voteType === 'up') {
+        const currentQuestion = question;
+        if (currentQuestion) {
+          await supabase
+            .from('questions')
+            .update({ 
+              view_count: (currentQuestion.view_count || 0) + 1 
+            })
+            .eq('id', targetId);
+        }
       }
 
       // Refresh data
